@@ -2,8 +2,9 @@
 import torch
 from torch import nn #nn contains all the pytorch building block from nural network
 import matplotlib
-matplotlib.use('MACOSX')#this is important if u are on vs code use TkAgg if on windows if on mac use MACOSX it looks good to idk why
+matplotlib.use('MacOSX')#this is important if u are on vs code use TkAgg if on windows if on mac use MACOSX it looks good to idk why
 import matplotlib.pyplot as plt
+from pathlib import Path#required to save model in python
 
 weight= 0.7
 bias= 0.3
@@ -64,7 +65,7 @@ class LinearRegressionModel(nn.Module):#nn.Module- its the building block of pyt
             return self.weights * x + self.bias #this is linear regression formula       
 #checking the content of our pytorch model
 #create a random seed(we used it so the output we get everytime is fixed not changing on everytime we run)
-torch.manual_seed(2)#changing manual seed values affect the predictions too
+torch.manual_seed(42)#changing manual seed values affect the predictions too
  
 #create subclass
 model_0 = LinearRegressionModel()
@@ -116,20 +117,36 @@ for epoch in range(epochs):
     loss.backward()
     #step the optimizer (perform gradient descent)
     optimizer.step() #by default how the optimizer changes will accumulate through the loop so.... we hvae to zero them above step 3 for the next iteration of loo p
- 
 
-print(model_0.state_dict())
-with torch.inference_mode():
-   y_pred_new=model_0(x_test)
+#to save and load the model
+
+#make model file and directory
+model_path=Path("models")
+model_path.mkdir(parents=True, exist_ok=True)
+
+#create model save path
+model_name= "model_1.pt"
+model_save_path= model_path / model_name
+
+torch.save(model_0.state_dict, model_save_path)#obj , save path. (state_dict is right apporch and more benificial in real world)
+
+
+#print(model_0.state_dict())
+#with torch.inference_mode():
+   #y_pred_new=model_0(x_test)
 #plot_prediction(prediction=y_pred_new)
 
 #testing loop
 model_0.eval()#turns of diffrent setting not needed during testing
 with torch.inference_mode():#turns of gradient tracking
-
     #do the forward pass
     test_pred=model_0(x_test)
     #calculate the loss
     test_loss=loss_fn(test_pred,y_test)
+    
+
 print(f"epoch: {epoch} |  loss: {loss}| test loss: {test_loss}")
-plot_prediction(prediction=test_pred)
+print(model_0.state_dict())
+print(test_loss)
+#plot_prediction(prediction=test_pred)#visualisation
+
