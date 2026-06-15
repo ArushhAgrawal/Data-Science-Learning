@@ -5,6 +5,7 @@ from sklearn.datasets import make_circles as mc
 import pandas as pd
 import torch
 from torch import nn
+from sklearn import datasets
 import numpy as np
 import matplotlib
 matplotlib.use("MacOSX")
@@ -29,9 +30,9 @@ print(circles[:10])
 #lets visualize 
 plt.scatter(x=x[:,0],
             y=x[:,1],
-            c="b",
+            c="b", 
             label="data")
-#plt.show() 
+# plt.show() 
 #the dataset we are working on is for practice its called toy dataset too weak 
 
 #sample shape
@@ -43,7 +44,7 @@ print(x.dtype)
 #turning data into tensors
 x= torch.from_numpy(x)
 #print(x.dtype)
-y= torch.from_numpy(y)
+y= torch.from_numpy(y).to(torch.float64)
 #print(y.dtype) 
 
 #spliting data into training and test set
@@ -58,10 +59,44 @@ x_train,  x_test,  y_train, y_test = train_test_split(x,#the data
 #building of nural network / model building
 #lets build a model to classify our blue dots
 # to do so we need to
-#set up device agnostic code gpu/cpu
-#consturct a model (by subclassing nn.module)
-#define a loss func and optimizer
-#create a training / test loop
 
-device= "mps" if torch.mps.is_available() else "cpu"
-print(device)
+#1 set up device agnostic code gpu/cpu
+#2 consturct a model (by subclassing nn.module)
+#3 define a loss func and optimizer
+#4 create a training / test loop
+
+#step 1
+device= "mps" if torch.mps.is_available() else "cpu" #mps is for mac only if u are vs code on collab use cuda only on mac also
+#print(device)
+
+# step 2
+class CircleModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer1= nn.Linear(in_features=2#number of columns of 1d obj
+                               , out_features=8)
+        self.layer2= nn.Linear(in_features=8, #should match with the out feature of the old layer
+                               out_features=1)
+    def forward (self, x) :
+        return self.layer2(self.layer1(x)) #x -> layer1 -> layer2 -> output
+# instantiate the class
+# model_0= CircleModel().to(device)
+# print(model_0)
+
+#to make the above code small we wnt to skip the class instantiation part
+#do this
+model_0= nn.Sequential(#what sequential does it makes the coding easy for us it thinks on its own whatever given inside it is in a sequence goes from layer1 to layer2 we dont need to define it in forward model
+    nn.Linear(in_features=2,out_features=8),
+    nn.Linear(in_features=8, out_features=1)
+).to(device)
+x_test = torch.Tensor(x_test).to(device, torch.float32)
+print(model_0)
+#not benificial in more complex or can be depends on the task
+
+#make prediction
+with torch.inference_mode():
+    untrained_pred =model_0(x_test)
+print(f"length of prediction: {len(untrained_pred)}, shape {untrained_pred.shape}")
+print(f"length of prediction: {len(x_test)}, shape {x_test.shape}")
+print(f"first 10 pred. {untrained_pred[:10]}")
+print(f"labels. {y_test[:10]}")
