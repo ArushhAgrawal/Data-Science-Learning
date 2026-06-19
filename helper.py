@@ -282,7 +282,7 @@ def download_data(source: str,
             print(f"[INFO] Downloading {target_file} from {source}...")
             f.write(request.content)
 
-        # Unzip pizza, steak, sushi data
+        # Unzip pizza, steak, sushi data.
         with zipfile.ZipFile(data_path / target_file, "r") as zip_ref:
             print(f"[INFO] Unzipping {target_file} data...") 
             zip_ref.extractall(image_path)
