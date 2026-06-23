@@ -31,7 +31,7 @@ print(f"image shape: {images.shape}")#colour channel, height, width
 # plt.imshow(images.squeeze())
 # plt.show()
 
-#ploting random image
+#ploting random image(for exprementation and testing)
 torch.manual_seed(32)
 fig =  plt.figure(figsize=(9,9))
 r,c =4,3
@@ -47,7 +47,7 @@ for i in range(1,r*c+1):
 #it converts our data from pytorch tensor to python itrable
 #we will convert our data to batch size (it will reduce the load on ram)
 train_dataloader= DataLoader(dataset=train_data,
-                             batch_size=32,
+                             batch_size=128,
                              shuffle=True)
 test_dataloader= DataLoader(dataset=test_data,
                             batch_size=32,
@@ -55,6 +55,9 @@ test_dataloader= DataLoader(dataset=test_data,
 print(f"loaded data: {train_dataloader}, {test_dataloader}")
 train_feature, train_label= next(iter(train_dataloader))
 test_feature, test_label= next(iter(test_dataloader))
+
+#device agnostic code
+device ="mps" if torch.mps.is_available() else "cpu"
 
 #making model
 class FashionModel(nn.Module):
@@ -69,7 +72,7 @@ class FashionModel(nn.Module):
                                         nn.ReLU(),
                                         nn.Linear(in_features=128, out_features=64),
                                         nn.ReLU(),
-                                        nn.Linear(in_features=64, out_features=10))
+                                        nn.Linear(in_features=64, out_features=10)).to(device)
     def forward(self,x):
         return self.layer_stack(x)
 
@@ -80,7 +83,7 @@ optimizer= torch.optim.Adam(params= model.parameters(),
                             lr=0.001)
 #defining accuracy function
 def accuracy(y_pred, y_true):
-    correct= torch.eq(y_pred, y_true).sum()
+    correct= torch.eq(y_pred, y_true.to(device)).sum()
     acc= (correct/len(y_pred))*100
     return acc
 
@@ -90,9 +93,9 @@ torch.manual_seed(32)
 for epoch in range(epochs):
     model.train()
     for batch, (x,y) in enumerate(train_dataloader):
-        y_logits= model(x)  
-        y_train_pred= torch.argmax(torch.softmax(y_logits, dim=1), dim=1)
-        loss_train= loss_fn(y_logits, y)  
+        y_logits= model(x.to(device))  
+        y_train_pred= torch.argmax(y_logits, dim=1)
+        loss_train= loss_fn(y_logits, y.to(device))  
         optimizer.zero_grad()
         loss_train.backward()
         optimizer.step()
@@ -100,9 +103,9 @@ for epoch in range(epochs):
     model.eval()
     with torch.inference_mode():
         for batch, (x,y) in enumerate(test_dataloader):
-            y_test_logits=model(x)
-            y_test_pred= torch.argmax(torch.softmax(y_test_logits,dim=1), dim=1)
-            loss_test= loss_fn(y_test_logits, y)
+            y_test_logits=model(x.to(device))
+            y_test_pred= torch.argmax(y_test_logits,dim=1)
+            loss_test= loss_fn(y_test_logits, y.to(device))
             acc_test= accuracy(y_pred= y_test_pred, y_true= y)
 print(f"training loss: {loss_train}, testing loss:{loss_test} ")
 print(f"training accuracy: {acc_train}, testing accuracy: {acc_test}")
@@ -116,12 +119,12 @@ def eval_model(model: torch.nn.Module,# this shows the type model is torcn.nn.MO
     model.eval()
     with torch.inference_mode():
         for batch, (x, y) in enumerate(data_loader):
-            y_logits= model(x)
-            loss= loss_fn(y_logits,y)
+            y_logits= model(x.to(device))
+            loss= loss_fn(y_logits,y.to(device))
             acc= accuracy(y_true=y,y_pred= torch.argmax(y_logits,dim=1))
             return loss.item(), acc.item()
 
-#testing
+#testing of eval_model function
 model_testing=eval_model(model=model,
                          data_loader=test_dataloader,
                          loss_fn=loss_fn,
