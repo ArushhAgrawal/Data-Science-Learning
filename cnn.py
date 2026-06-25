@@ -8,11 +8,11 @@ from torch.utils.data import DataLoader
 
 train_data= datasets.FashionMNIST(root= "image_data",
                                   train=True,
-                                  transform=torch.Tensor(),
+                                  transform=transforms.ToTensor(),
                                   target_transform=None)
 test_data= datasets.FashionMNIST(root="image_data",
                                  train=False,
-                                 transform=torch.Tensor(),
+                                 transform=transforms.ToTensor(),
                                  target_transform=None)
                                 
 train_dataloader= DataLoader(dataset=train_data,
@@ -21,26 +21,61 @@ train_dataloader= DataLoader(dataset=train_data,
 test_dataloader= DataLoader(dataset=test_data,
                             batch_size=32,
                             shuffle=True)
+images, label= next(iter(train_dataloader))
+# print(images.shape)
+
 #device agnostic code
 device= "mps" if torch.mps.is_available() else "cpu"
 
 class FashionModel(nn.Module):
     def __init__ (self):
-        super().__init__()
-        self.conv_block1= nn.Sequential(nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3,padding=1,stride=1),
+        super().__init__() 
+        self.conv_block1= nn.Sequential(nn.Conv2d(in_channels=1, out_channels=10, kernel_size=3,padding=1,stride=1),
                                         nn.ReLU(),
-                                        nn.Conv2d(in_channels=64, out_channels=32, kernel_size=3,padding=1,stride=1),
+                                        nn.Conv2d(in_channels=10, out_channels=16, kernel_size=3,padding=1,stride=1),
                                         nn.ReLU(),
-                                        nn.MaxPool2d(kernel_size=2, stride=2 )#stide is by default set to match the kernel value
+                                        nn.MaxPool2d(kernel_size=2, stride=2 )#stride is by default set to match the kernel value
                                         )      
-        self.conv_block2=nn.Sequential(nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3,padding=1,stride=1),
+        self.conv_block2=nn.Sequential(nn.Conv2d(in_channels=16, out_channels=10, kernel_size=3,padding=1,stride=1),
                                        nn.ReLU(),
-                                       nn.Conv2d(in_channels=32, out_channels=16, kernel_size=3,padding=1,stride=1),
+                                       nn.Conv2d(in_channels=10, out_channels=16, kernel_size=3,padding=1,stride=1),
                                        nn.MaxPool2d(kernel_size=2, stride=2))         
         self.classifier= nn.Sequential(nn.Flatten(),
-                                       nn.Linear(in_features=16*0, out_features=10))
+                                       nn.Linear(in_features=16*7*7, out_features=10))
     def forward(self, x):
         return self.classifier(self.conv_block2(self.conv_block1(x)))
+
+#instantiating model
+model= FashionModel()
+
+#defing loss and optimizer functions
+loss_fn= nn.CrossEntropyLoss()
+optimizer= torch.optim.Adam(model.parameters(), lr=0.001)
+
+#DUMMY MODEL
+# torch.manual_seed(32)
+# with torch.inference_mode():
+#     for batch,(x,y) in enumerate(test_dataloader):
+#         y1=model(x)
+#         loss=loss_fn(y1,y)
+# print(y1.shape)
+
+#training loop
 torch.manual_seed(32)
-model_2=FashionModel()
-print(model_2)
+epochs=1
+for epoch in range(epochs):
+    model.train()
+    for batch, (x,y) in enumerate(train_dataloader):
+        y_logits_train=model(x)
+        y_pred_train= torch.argmax(y_logits_train, dim=1)
+        loss_train= loss_fn(y_logits_train, y)
+        optimizer.zero_grad()
+        loss_train.backward()
+        optimizer.step()
+    model.eval()
+    for batch, (x,y) in enumerate(test_dataloader):
+        with torch.inference_mode():
+            y_logits_test= model(x)
+            y_pred_test= torch.argmax(y_logits_test, dim=1)
+            loss_test= loss_fn(y_logits_test, y)
+print(loss_test, loss_train)
