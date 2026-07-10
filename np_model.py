@@ -25,6 +25,11 @@ y_labels_train= train_data.targets.numpy()
 y_labels_train= y_labels_train[:10000]
 y_labels_test= test_data.targets.numpy()
 y_labels_test= y_labels_test[:10000]
+print(y_labels_test.shape)
 
-print(y_labels_test)
+# def loss(y_pred, y_true):
+#     i=1
+#     for i in range(10):
+#         y_pred[i-1:i]#finding the predicited output
+        
 
