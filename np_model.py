@@ -62,7 +62,19 @@ def update(weight, bias, dW,db, lr):
     bias-= lr*db
     return weight,  bias
 
-
-    
-
-
+#train/test loop
+weight, bias= params(10)
+lr=0.01
+epochs=100
+for epoch in range(epochs):
+    a,z = passes(x_train, weight, bias)
+    loss_train= loss(a,  y_labels_train)
+    dw, db= backward(x_train, weight, bias, a,z,y_labels_train)
+    weight, bias= update(weight, bias, dw, db, lr)
+    if epoch % 10 ==0:
+        print("train" , loss_train)
+epoch=0 
+for epoch in range(10):
+    a,z = passes(x_test, weight, bias)
+    loss_test = loss(a, y_labels_test)
+print(f"test, {loss_test}")
