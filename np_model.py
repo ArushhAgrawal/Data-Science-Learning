@@ -35,22 +35,21 @@ def params(out_features):
     return weight, bias
 
 def passes(x_data , weight, bias):
-    forward_pass= np.maximum(0, np.matmul(x_data,weight)+bias)
-    return forward_pass
+    z= np.matmul(x_data,weight)+bias
+    a=np.maximum(0,z)
+    return a,z
 
 def loss(y_pred, y_true):
-    i=0
-    cost= np.array([])
-    for i in range(10):
-        if i== y_true:
-            cost= np.append(cost, (y_pred[y_true]- 1)**2)
-        else:
-            cost= np.append(cost, (y_pred[i]-0)**2)
-    return cost.mean()
+    m=y_pred.shape[0]
+    target= np.zeros_like(y_pred)
+    target[np.arange(m),y_true]=1#its going to convert say there is a zero array it will find the location from m and y_true say 3 so at index 3 it will become 1
+    cost= np.mean((y_pred- target)**2)
+    return cost
 
-def backward(x_data, weight, bias, a, z, target ):
+def backward(x_data, weight, bias, a, z, y_true ):#a is relu z and z is x@weight+bias
     m = x_data.shape[0]
-
+    target= np.zeros_like(a)
+    target[np.arange(m),y_true]=1
     dL_da = 2 * (a - target) / 10       
     relu_grad = (z > 0).astype(float)#avoid boolean   
     dL_dz = dL_da * relu_grad                  
@@ -59,8 +58,8 @@ def backward(x_data, weight, bias, a, z, target ):
     return dW, db
 
 def update(weight, bias, dW,db, lr):
-    weight= -lr*dW
-    bias= -lr*db
+    weight-= lr*dW
+    bias-= lr*db
     return weight,  bias
 
 
