@@ -48,12 +48,17 @@ class UNET(nn.Module):
         for index in range (0,len(self.up), 2):
             x=self.up[index](x)#up sampling
             skip_tensor= skip[index//2]#divides and then rounds to nearest whole number
-            concat_skip= torch.cat((skip_tensor, x),dim=1)
+            if skip_tensor.shape == x.shape:
+                concat_skip= torch.cat((skip_tensor, x),dim=1)    
+            else:
+                l= x.shape[2]
+                w=x.shape[3]
+                concat_skip= torch.cat((skip_tensor[:,:, :l, :w], x),dim=1)
             x= self.up[index+1](concat_skip)
         return self.final_conv(x)
 
 #test
-x=torch.randn((3,1,160,160))
+x=torch.randn((3,1,180,180))
 model= UNET(in_channels=1, out_channels=1)
 pred= model(x)
 print(pred.shape)
